@@ -1,6 +1,10 @@
-public class Day1
+public class Day1 : Day
 {
-    public static void Part1()
+    public Day1() : base(1)
+    {
+    }
+
+    protected override void Part1()
     {
         string[] inputLines = File.ReadAllLines("Inputs/Day1.txt");
 
@@ -8,10 +12,10 @@ public class Day1
             line.Where(character => Char.IsDigit(character)))
             .Sum(line => int.Parse(line.First().ToString() + int.Parse(line.Last().ToString())));
 
-        Console.WriteLine($"Day 1 Part 1 : {total}");
+        PrintOutput(1, total);
     }
 
-    public static void Part2()
+    protected override void Part2()
     {
         Dictionary<string, int> numericValues = new Dictionary<string, int>();
         numericValues.Add("one", 1);
@@ -69,12 +73,6 @@ public class Day1
             total += int.Parse(valuesFound.First().Value.ToString() + valuesFound.Last().Value.ToString());
         }
 
-        Console.WriteLine($"Day 1 Part 2 : {total}");
-    }
-
-    public static void Run()
-    {
-        Part1();
-        Part2();
+        PrintOutput(2, total);
     }
 }
