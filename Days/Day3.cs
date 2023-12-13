@@ -17,6 +17,9 @@ public class Day3 : Day
     protected override void Part2()
     {
         char[,] inputArray = BuildInputArray();
+        List<Day3ParsedNumber> numbers = ParseNumbers(inputArray);
+        List<Day3ParsedSymbol> gears = ParseGears(inputArray);
+        PrintOutput(1, GetSumOfGearsPowers(numbers, gears));
     }
 
     private char[,] BuildInputArray()
@@ -139,6 +142,42 @@ public class Day3 : Day
         return returnSymbols;
     }
 
+    private List<Day3ParsedSymbol> ParseGears(char[,] inputArray)
+    {
+        List<Day3ParsedSymbol> returnSymbols = new List<Day3ParsedSymbol>();
+
+        long rows = inputArray.GetLongLength(0) - 1;
+        long columns = inputArray.GetLongLength(1) - 1;
+        int currentRow = 0, currentColumn = 0;
+
+        while(currentRow <= rows)
+        {
+            char nextChar = inputArray[currentRow, currentColumn];
+
+            if(nextChar == '*')
+            {
+                returnSymbols.Add(new Day3ParsedSymbol
+                {
+                    Column = currentColumn,
+                    Row = currentRow,
+                    Value = nextChar
+                });
+            }
+
+            if(currentColumn == columns)
+            {
+                currentColumn = 0;
+                currentRow++;
+            }
+            else
+            {
+                currentColumn++;
+            }
+        }
+
+        return returnSymbols;
+    }
+
     private int GetSumOfValidNumbers(List<Day3ParsedNumber> numbers, List<Day3ParsedSymbol> symbols)
     {
         int returnValue = 0;
@@ -147,24 +186,57 @@ public class Day3 : Day
         {
             bool symbolsInRowAbove = symbols
                 .Any(symbol => symbol.Row == number.Row - 1 &&
-                    (symbol.Column >= number.StartColumn - 1 && symbol.Column <= number.EndColumn + 1));
+                    symbol.Column >= number.StartColumn - 1 && symbol.Column <= number.EndColumn + 1);
 
             bool symbolsInRowBelow = symbols
                 .Any(symbol => symbol.Row == number.Row + 1 &&
-                    (symbol.Column >= number.StartColumn - 1 && symbol.Column <= number.EndColumn + 1));
+                    symbol.Column >= number.StartColumn - 1 && symbol.Column <= number.EndColumn + 1);
 
             bool symbolsInColumnToTheLeft = symbols
                 .Any(symbol => symbol.Column == number.StartColumn - 1 &&
-                    (symbol.Row >= number.Row - 1 && symbol.Row <= number.Row + 1));
+                    symbol.Row >= number.Row - 1 && symbol.Row <= number.Row + 1);
 
             bool symbolsInColumnToTheRight = symbols
                 .Any(symbol => symbol.Column == number.EndColumn + 1 &&
-                    (symbol.Row >= number.Row - 1 && symbol.Row <= number.Row + 1));
+                    symbol.Row >= number.Row - 1 && symbol.Row <= number.Row + 1);
 
             if(symbolsInRowAbove || symbolsInRowBelow
                 || symbolsInColumnToTheLeft || symbolsInColumnToTheRight)
             {
                 returnValue += number.Value;
+            }
+        }
+
+        return returnValue;
+    }
+
+    private int GetSumOfGearsPowers(List<Day3ParsedNumber> numbers, List<Day3ParsedSymbol> symbols)
+    {
+        int returnValue = 0;
+
+        foreach(Day3ParsedSymbol gear in symbols)
+        {
+            List<Day3ParsedNumber> adjacentNumbers = new List<Day3ParsedNumber>();
+
+            adjacentNumbers.AddRange(numbers
+                .Where(number => number.Row == gear.Row - 1
+                    && (number.StartColumn - 1<= gear.Column && number.EndColumn + 1 >= gear.Column)));
+
+            adjacentNumbers.AddRange(numbers
+                .Where(number => number.Row == gear.Row + 1
+                    && (number.StartColumn - 1<= gear.Column && number.EndColumn + 1 >= gear.Column)));
+
+            adjacentNumbers.AddRange(numbers
+                .Where(number => number.Row == gear.Row
+                    && (number.EndColumn == gear.Column - 1)));
+
+            adjacentNumbers.AddRange(numbers
+                .Where(number => number.Row == gear.Row
+                    && (number.StartColumn == gear.Column + 1)));
+
+            if(adjacentNumbers.Count == 2)
+            {
+                returnValue += (adjacentNumbers[0].Value * adjacentNumbers[1].Value);
             }
         }
 
