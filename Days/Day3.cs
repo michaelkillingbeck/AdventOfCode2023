@@ -1,3 +1,5 @@
+using System.Text;
+
 public class Day3 : Day
 {
     public Day3() : base(3)
@@ -7,13 +9,14 @@ public class Day3 : Day
     protected override void Part1()
     {
         char[,] inputArray = BuildInputArray();
-        PrintOutput(1, GetValidNumbersFromArray(inputArray));
+        List<Day3ParsedNumber> numbers = ParseNumbers(inputArray);
+        List<Day3ParsedSymbol> symbols = ParseSymbols(inputArray);
+        PrintOutput(1, GetSumOfValidNumbers(numbers, symbols));
     }
 
     protected override void Part2()
     {
         char[,] inputArray = BuildInputArray();
-
     }
 
     private char[,] BuildInputArray()
@@ -33,240 +36,138 @@ public class Day3 : Day
         return inputArrray;
     }
 
-    private int GetValidNumbersFromArray(char[,] inputArray)
+    private List<Day3ParsedNumber> ParseNumbers(char[,] inputArray)
     {
-        List<int> validNumbers = new List<int>();
-        long rows = inputArray.GetLongLength(0);
-        long columns = inputArray.GetLongLength(1);
+        List<Day3ParsedNumber> returnNumbers = new List<Day3ParsedNumber>();
 
+        long rows = inputArray.GetLongLength(0) - 1;
+        long columns = inputArray.GetLongLength(1) - 1;
         int currentRow = 0, currentColumn = 0;
 
-        while(currentRow < inputArray.GetLongLength(0))
-        {
-            Day3ParsedNumber parsedNumber = ParseNumber(currentRow, currentColumn, inputArray);
+        StringBuilder stringBuilder = new StringBuilder();
 
-            if(parsedNumber.HasMatch)
-            {
-                if(IsValidNumber(parsedNumber, inputArray))
-                {
-                    validNumbers.Add(parsedNumber.Value);
-                }
-                else
-                {
-                    Console.WriteLine($"{parsedNumber.Value} is invalid");
-                }
-            }
-            
-            if(parsedNumber.EndColumn == inputArray.GetLongLength(1))
-            {
-                currentColumn = 0;
-                currentRow = parsedNumber.EndRow + 1;
-            }
-            else
-            {
-                currentColumn = parsedNumber.EndColumn;
-            }
-        }
+        int? startingColumn = null;
 
-        return validNumbers.Sum();
-    }
-
-    private Day3ParsedNumber ParseNumber(int startingRow, int startingColumn, char[,] inputArray)
-    {
-        int currentRow = startingRow;
-        int currentColumn = startingColumn;
-        string currentNumber = string.Empty;
-
-        while(currentRow < inputArray.GetLongLength(0)
-            && currentColumn < inputArray.GetLongLength(1))
+        while(currentRow <= rows)
         {
             char nextChar = inputArray[currentRow, currentColumn];
 
             if(char.IsDigit(nextChar))
             {
-                if(string.IsNullOrEmpty(currentNumber))
+                stringBuilder.Append(nextChar);
+
+                if(startingColumn == null)
                 {
-                    startingRow = currentRow;
                     startingColumn = currentColumn;
                 }
-
-                currentNumber += nextChar;
             }
-            else if(string.IsNullOrEmpty(currentNumber) == false)
+            else if(stringBuilder.Length > 0 && startingColumn != null)
             {
-                break;
+                returnNumbers.Add(new Day3ParsedNumber
+                {
+                    EndColumn = currentColumn - 1,
+                    Row = currentRow,
+                    StartColumn = startingColumn.Value,
+                    Value = int.Parse(stringBuilder.ToString())
+                });
+
+                startingColumn = null;
+                stringBuilder.Clear();
             }
 
-            if(currentColumn < inputArray.GetLongLength(1))
+            if(currentColumn == columns)
             {
-                currentColumn++;
+                if(stringBuilder.Length > 0 && startingColumn != null)
+                {
+                    returnNumbers.Add(new Day3ParsedNumber
+                    {
+                        EndColumn = currentColumn,
+                        Row = currentRow,
+                        StartColumn = startingColumn.Value,
+                        Value = int.Parse(stringBuilder.ToString())
+                    });
+
+                    startingColumn = null;
+                    stringBuilder.Clear();
+                }
+
+                currentColumn = 0;
+                currentRow++;
             }
             else
             {
-                break;
+                currentColumn++;
             }
         }
 
-        if(string.IsNullOrEmpty(currentNumber))
-        {
-            return new Day3ParsedNumber
-            {
-                EndColumn = currentColumn,
-                EndRow = currentRow,
-                HasMatch = false,
-                StartColumn = startingColumn,
-                StartRow = startingRow
-            };
-        }
-
-        return new Day3ParsedNumber
-        {
-            EndColumn = currentColumn,
-            EndRow = currentRow,
-            HasMatch = true,
-            StartColumn = startingColumn,
-            StartRow = startingRow,
-            Value = int.Parse(currentNumber)
-        };
+        return returnNumbers;
     }
 
-    private bool IsValidNumber(Day3ParsedNumber parsedNumber, char[,] inputArray)
+    private List<Day3ParsedSymbol> ParseSymbols(char[,] inputArray)
     {
-        if(parsedNumber.StartRow != 0)
+        List<Day3ParsedSymbol> returnSymbols = new List<Day3ParsedSymbol>();
+
+        long rows = inputArray.GetLongLength(0) - 1;
+        long columns = inputArray.GetLongLength(1) - 1;
+        int currentRow = 0, currentColumn = 0;
+
+        while(currentRow <= rows)
         {
-            if(CheckAbove(parsedNumber, inputArray))
+            char nextChar = inputArray[currentRow, currentColumn];
+
+            if(char.IsDigit(nextChar) == false && nextChar != '.')
             {
-                return true;
+                returnSymbols.Add(new Day3ParsedSymbol
+                {
+                    Column = currentColumn,
+                    Row = currentRow,
+                    Value = nextChar
+                });
+            }
+
+            if(currentColumn == columns)
+            {
+                currentColumn = 0;
+                currentRow++;
+            }
+            else
+            {
+                currentColumn++;
             }
         }
 
-        if(parsedNumber.EndRow != inputArray.GetLongLength(0) - 1)
-        {
-            if(CheckBelow(parsedNumber, inputArray))
-            {
-                return true;
-            }
-        }
-
-        if(parsedNumber.StartColumn != 0)
-        {
-            if(CheckLeft(parsedNumber, inputArray))
-            {
-                return true;
-            }
-        }
-
-        if(parsedNumber.EndColumn < inputArray.GetLongLength(1) - 1)
-        {
-            if(CheckRight(parsedNumber, inputArray))
-            {
-                return true;
-            }
-        }
-
-        return false;
+        return returnSymbols;
     }
 
-    private bool CheckAbove(Day3ParsedNumber parsedNumber, char[,] inputArray)
+    private int GetSumOfValidNumbers(List<Day3ParsedNumber> numbers, List<Day3ParsedSymbol> symbols)
     {
-        int startingColumn = 0, endingColumn = 0;
+        int returnValue = 0;
 
-        if(parsedNumber.StartColumn != 0)
+        foreach(Day3ParsedNumber number in numbers)
         {
-            startingColumn = parsedNumber.StartColumn - 1;
-        }
+            bool symbolsInRowAbove = symbols
+                .Any(symbol => symbol.Row == number.Row - 1 &&
+                    (symbol.Column >= number.StartColumn - 1 && symbol.Column <= number.EndColumn + 1));
 
-        if(parsedNumber.EndColumn != inputArray.GetLongLength(1))
-        {
-            endingColumn = parsedNumber.EndColumn + 1;
-        }
+            bool symbolsInRowBelow = symbols
+                .Any(symbol => symbol.Row == number.Row + 1 &&
+                    (symbol.Column >= number.StartColumn - 1 && symbol.Column <= number.EndColumn + 1));
 
-        for(; startingColumn < endingColumn; startingColumn++)
-        {
-            char charToCheck = inputArray[parsedNumber.StartRow - 1, startingColumn];
+            bool symbolsInColumnToTheLeft = symbols
+                .Any(symbol => symbol.Column == number.StartColumn - 1 &&
+                    (symbol.Row >= number.Row - 1 && symbol.Row <= number.Row + 1));
 
-            if(char.IsDigit(charToCheck) == false && charToCheck != '.')
+            bool symbolsInColumnToTheRight = symbols
+                .Any(symbol => symbol.Column == number.EndColumn + 1 &&
+                    (symbol.Row >= number.Row - 1 && symbol.Row <= number.Row + 1));
+
+            if(symbolsInRowAbove || symbolsInRowBelow
+                || symbolsInColumnToTheLeft || symbolsInColumnToTheRight)
             {
-                return true;
+                returnValue += number.Value;
             }
         }
 
-        return false;
-    }
-
-    private bool CheckBelow(Day3ParsedNumber parsedNumber, char[,] inputArray)
-    {
-        int startingColumn = 0;
-
-        if(parsedNumber.StartColumn != 0)
-        {
-            startingColumn = parsedNumber.StartColumn - 1;
-        }
-
-        for(; startingColumn < parsedNumber.EndColumn; startingColumn++)
-        {
-            char charToCheck = inputArray[parsedNumber.EndRow + 1, startingColumn];
-
-            if(char.IsDigit(charToCheck) == false && charToCheck != '.')
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private bool CheckLeft(Day3ParsedNumber parsedNumber, char[,] inputArray)
-    {
-        int startingRow = 0, endingRow = 0;
-
-        if(parsedNumber.StartRow != 0)
-        {
-            startingRow = parsedNumber.StartRow - 1;
-        }
-
-        if(parsedNumber.EndRow != inputArray.GetLongLength(0) - 1)
-        {
-            endingRow = parsedNumber.StartRow + 1;
-        }
-
-        for(; startingRow <= endingRow; startingRow++)
-        {
-            char charToCheck = inputArray[startingRow, parsedNumber.StartColumn - 1];
-
-            if(char.IsDigit(charToCheck) == false && charToCheck != '.')
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private bool CheckRight(Day3ParsedNumber parsedNumber, char[,] inputArray)
-    {
-        int startingRow = 0, endingRow = 0;
-
-        if(parsedNumber.StartRow != 0)
-        {
-            startingRow = parsedNumber.StartRow - 1;
-        }
-
-        if(parsedNumber.EndRow != inputArray.GetLongLength(0) - 1)
-        {
-            endingRow = parsedNumber.StartRow + 1;
-        }
-
-        for(; startingRow <= endingRow; startingRow++)
-        {
-            char charToCheck = inputArray[startingRow, parsedNumber.EndColumn];
-
-            if(char.IsDigit(charToCheck) == false && charToCheck != '.')
-            {
-                return true;
-            }
-        }
-
-        return false;
+        return returnValue;
     }
 }
