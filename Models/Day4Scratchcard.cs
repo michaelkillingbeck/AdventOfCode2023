@@ -1,6 +1,7 @@
 public class Day4Scratchcard
 {
     public int GameID { get; private set; }
+    public int Instances { get; set; }
     public List<int> PlayerNumbers { get; private set; }
     public List<int> WinningNumbers { get; private set; }
 
@@ -10,6 +11,8 @@ public class Day4Scratchcard
 
         ParseGameID(gameLine, colonIndex);
         ParseNumbers(gameLine, colonIndex);
+
+        Instances = 1;
     }
 
     private void ParseGameID(string gameLine, int colonIndex)
@@ -43,7 +46,12 @@ public class Day4Scratchcard
 
     public int TotalWinningPoints()
     {
-        return (int)Math.Pow(2, PlayerNumbers
-            .Count(number => WinningNumbers.Contains(number)) - 1);
+        return (int)Math.Pow(2, AmountOfWinningNumbers() - 1);
+    }
+
+    public int AmountOfWinningNumbers()
+    {
+        return PlayerNumbers
+            .Count(number => WinningNumbers.Contains(number));
     }
 }
